@@ -1,4 +1,5 @@
 import time
+import platform
 import os
 
 map_table = []
@@ -6,8 +7,7 @@ map_table = []
 with open("input/day06-test-input.txt", "r") as file:
     map_table= file.read().split("\n")
 
-#print(map_table)
-
+""" Find coordinates of obstacles and the guard from the input """
 def find_obstacles_and_guard(map_table):
     obstacle_list = []
     for row_idx, row in enumerate(map_table):
@@ -18,6 +18,11 @@ def find_obstacles_and_guard(map_table):
             guard_pos = {"row": row_idx, "col": row.find("^"),}
     return obstacle_list, guard_pos
 
+"""
+ Simulates a guard patroling:
+  - If there is something directly in front of you, turn right 90 degrees.
+  - Otherwise, take a step forward.
+"""
 class Guard:
 
     direction_list = ['^', '>', 'V', '<']
@@ -58,6 +63,7 @@ class Guard:
             next_step["col"] += 1
         return next_step
 
+""" Does the guard left the map? """
 def is_gone(guard: Guard, map_table: list):
     next_step = guard.get_next_step()
     if next_step["row"] < 0 or next_step["col"] < 0:
@@ -69,19 +75,26 @@ def is_gone(guard: Guard, map_table: list):
 obstacle_list, guard_pos = find_obstacles_and_guard(map_table)
 print(obstacle_list)
 
+def clear_console():
+    if platform.system() == "Windows":
+        os.system("cls")
+    else:
+        os.system("clear")
+
+""" Demo for visual debugging """
 def print_map_with_guard(guard: Guard, map_table: list):
     for i in range(len(map_table)):
         for j in range(len(map_table[i])):
             if guard.position["row"] == i and guard.position["col"] == j:
                 print(guard.direction, end=" ")
+            elif map_table[i][j] == "^": # do not show initial guard position all the time
+                print(".", end=" ")
             else:
                 print(map_table[i][j], end=" ")
         print("")
 
 guard = Guard(guard_pos)
-path = list()
-
-#print_map_with_guard(guard, map_table)
+path = [str(guard_pos)] # including the guard's starting position
 
 while not is_gone(guard, map_table):
     if guard.get_next_step() not in obstacle_list:
@@ -89,8 +102,9 @@ while not is_gone(guard, map_table):
         guard.step()
     else:
         guard.turn()
+    # Visual demo
     time.sleep(0.5)
-    os.system("clear") # WARNING: Linux specific
+    clear_console()
     print_map_with_guard(guard, map_table)
 
 print(path)
