@@ -62,3 +62,27 @@ for i in range(len(letters)):
         count += check_main_diag(letters, i, j)
         count += check_other_diag(letters, i, j)
 print(f"The word XMAS count in puzzle: {count}")
+
+# Part 2
+
+def check_x_mas(table, row, col):
+    if table[row][col] != 'A': # not A in the middle - cannot be X-MAS
+        return 0
+    if set([table[row-1][col-1], table[row-1][col+1], table[row+1][col-1], table[row+1][col+1]]) != set(['M', 'S']): # invalid characters
+        return 0
+    if table[row-1][col-1] == 'M' and table[row+1][col+1] != 'S': # bad diagonal (MM or SS)
+        return 0
+    if table[row-1][col-1] == 'S' and table[row+1][col+1] != 'M': # bad diagonal (MM or SS)
+        return 0
+    if table[row-1][col+1] == 'M' and table[row+1][col-1] != 'S': # bad diagonal (MM or SS)
+        return 0
+    if table[row-1][col+1] == 'S' and table[row+1][col-1] != 'M': # bad diagonal (MM or SS)
+        return 0
+    return 1 # Merry X-MAS!
+
+# check everything except the boundaries
+count = 0
+for i in range(1, len(letters)-1):
+    for j in range(1, len(letters[i])-1):
+        count += check_x_mas(letters, i, j)
+print(f"X-MAS count in puzzle: {count}")
