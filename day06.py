@@ -27,12 +27,14 @@ class Guard:
 
     direction_list = ['^', '>', 'V', '<']
 
-    def __init__(self, position, direction='^'):
-        self.position  = position
+    def __init__(self, pos_row, pos_col, direction='^'):
+        self.pos_row  = pos_row
+        self.pos_col  = pos_col
         self.direction = direction
+        self.previous_states = list()
 
     def __str__(self):
-        return f"Guard {self.direction} in position: {self.position}"
+        return f"Guard {self.direction} in position: row={self.pos_row}, rol={self.pos_col}"
 
     def turn(self):
         idx = self.direction_list.index(self.direction)
@@ -41,27 +43,28 @@ class Guard:
 
     def step(self):
         if self.direction == '^':
-            self.position["row"] -=1
+            self.pos_row -=1
         elif self.direction == 'V':
-            self.position["row"] +=1
+            self.pos_row +=1
         elif self.direction == '<':
-            self.position["col"] -=1
+            self.pos_col -=1
         elif self.direction == '>':
-            self.position["col"] += 1
+            self.pos_col += 1
         else:
             print("Cannot step")
 
     def get_next_step(self):
-        next_step = dict(self.position)
+        next_step_row = int(self.pos_row)
+        next_step_col = int(self.pos_col)
         if self.direction == '^':
-            next_step["row"] -=1
+            next_step_row -=1
         elif self.direction == 'V':
-            next_step["row"] +=1
+            next_step_row +=1
         elif self.direction == '<':
-            next_step["col"] -=1
+            next_step_col -=1
         elif self.direction == '>':
-            next_step["col"] += 1
-        return next_step
+            next_step_col += 1
+        return {"row": next_step_row, "col": next_step_col}
 
 """ Does the guard left the map? """
 def is_gone(guard: Guard, map_table: list):
@@ -72,9 +75,6 @@ def is_gone(guard: Guard, map_table: list):
         return True
     return False
 
-obstacle_list, guard_pos = find_obstacles_and_guard(map_table)
-print(obstacle_list)
-
 def clear_console():
     if platform.system() == "Windows":
         os.system("cls")
@@ -82,30 +82,38 @@ def clear_console():
         os.system("clear")
 
 """ Demo for visual debugging """
-def print_map_with_guard(guard: Guard, map_table: list):
+def print_map_with_guard(guard: Guard, map_table: list, obstacle_list):
     for i in range(len(map_table)):
         for j in range(len(map_table[i])):
-            if guard.position["row"] == i and guard.position["col"] == j:
+            if guard.pos_row == i and guard.pos_col == j:
                 print(guard.direction, end=" ")
-            elif map_table[i][j] == "^": # do not show initial guard position all the time
-                print(".", end=" ")
+            elif {"row": i, "col": j} in obstacle_list: # for part 2
+                print("X", end=" ")
             else:
-                print(map_table[i][j], end=" ")
+                print(".", end=" ")
         print("")
 
-guard = Guard(guard_pos)
-path = [str(guard_pos)] # including the guard's starting position
+def run(start_pos, map_table, obstacle_list, demo=False):
+    guard = Guard(start_pos["row"], start_pos["col"])
+    path = [str(start_pos)] # including the guard's starting position
+    while not is_gone(guard, map_table):
+        if guard.get_next_step() not in obstacle_list:
+            path.append(str(guard.get_next_step()))
+            guard.step()
+        else:
+            guard.turn()
+        if demo:
+            time.sleep(0.3)
+            clear_console()
+            print_map_with_guard(guard, map_table, obstacle_list)
+    return path
 
-while not is_gone(guard, map_table):
-    if guard.get_next_step() not in obstacle_list:
-        path.append(str(guard.get_next_step()))
-        guard.step()
-    else:
-        guard.turn()
-    # Visual demo
-    time.sleep(0.5)
-    clear_console()
-    print_map_with_guard(guard, map_table)
-
-print(path)
+obstacle_list, start_pos = find_obstacles_and_guard(map_table)
+path = run(start_pos, map_table, obstacle_list, demo=True)
 print(f"Guard visit {len(set(path))} distinct positions before leave")
+
+# Part 2
+
+obstacle_list.append({"row": 6, "col": 3})
+print(f"Start position: {start_pos}")
+path = run(start_pos, map_table, obstacle_list, demo=True)
