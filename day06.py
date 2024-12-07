@@ -4,7 +4,7 @@ import os
 
 map_table = []
 
-with open("input/day06-test-input.txt", "r") as file:
+with open("input/day06-input.txt", "r") as file:
     map_table= file.read().split("\n")
 
 """ Find coordinates of obstacles and the guard from the input """
@@ -26,12 +26,13 @@ def find_obstacles_and_guard(map_table):
 class Guard:
 
     direction_list = ['^', '>', 'V', '<']
+    step_count = 0
 
     def __init__(self, pos_row, pos_col, direction='^'):
-        self.pos_row  = pos_row
-        self.pos_col  = pos_col
+        self.pos_row = pos_row
+        self.pos_col = pos_col
         self.direction = direction
-        self.previous_states = list()
+        self.step_count = 0
 
     def __str__(self):
         return f"Guard {self.direction} in position: row={self.pos_row}, rol={self.pos_col}"
@@ -50,8 +51,7 @@ class Guard:
             self.pos_col -=1
         elif self.direction == '>':
             self.pos_col += 1
-        else:
-            print("Cannot step")
+        self.step_count += 1
 
     def get_next_step(self):
         next_step_row = int(self.pos_row)
@@ -93,6 +93,7 @@ def print_map_with_guard(guard: Guard, map_table: list, obstacle_list):
                 print(".", end=" ")
         print("")
 
+""" Main routine - run guard from a given start position """
 def run(start_pos, map_table, obstacle_list, demo=False):
     guard = Guard(start_pos["row"], start_pos["col"])
     path = [str(start_pos)] # including the guard's starting position
@@ -103,17 +104,31 @@ def run(start_pos, map_table, obstacle_list, demo=False):
         else:
             guard.turn()
         if demo:
-            time.sleep(0.3)
+            time.sleep(0.1)
             clear_console()
             print_map_with_guard(guard, map_table, obstacle_list)
+        if guard.step_count > (4 * len(map_table) * len(map_table[0])): # not really optimal...
+            return -1 # avoid infinite loop
     return path
 
-obstacle_list, start_pos = find_obstacles_and_guard(map_table)
-path = run(start_pos, map_table, obstacle_list, demo=True)
-print(f"Guard visit {len(set(path))} distinct positions before leave")
+if __name__ == "__main__":
 
-# Part 2
+    obstacle_list, start_pos = find_obstacles_and_guard(map_table)
+    path = run(start_pos, map_table, obstacle_list, demo=False)
+    print(f"Guard visit {len(set(path))} distinct positions before leave")
 
-obstacle_list.append({"row": 6, "col": 3})
-print(f"Start position: {start_pos}")
-path = run(start_pos, map_table, obstacle_list, demo=True)
+    # Part 2
+
+    count = 0
+    for i in range(len(map_table)):
+        for j in range(len(map_table[0])):
+            new_obs = {"row": i, "col": j}
+            if new_obs not in obstacle_list:
+                extended_obstacles = obstacle_list.copy() 
+                extended_obstacles.append(new_obs)
+               # print(f"Start with new obstacle: {new_obs}")
+                path = run(start_pos, map_table, extended_obstacles, demo=False)
+                if path == -1:
+                    print(f"Infinite partoling detected with {new_obs}")
+                    count += 1
+    print(f"Infinite patroling with {count} different positions")
