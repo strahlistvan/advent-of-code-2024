@@ -66,11 +66,17 @@ class Robot:
 def read_input(filename):
     warehouse_map = list()
     with open(filename) as file:
+        # read warehouse map
         line = list(file.readline().strip("\n"))
         while line:
             warehouse_map.append(line)
             line = list(file.readline().strip("\n"))
-        commands = file.readline().strip("\n")
+        # read commands
+        line = file.readline().strip("\n")
+        commands = ""
+        while line:
+            commands += line
+            line = file.readline().strip("\n")
     return warehouse_map, commands
 
 def print_map(warehouse_map):
@@ -91,17 +97,19 @@ def clear_console():
         os.system("clear")
 
 def main():
-    warehouse_map, commands = read_input("input/day15-test-input.txt")
+    warehouse_map, commands = read_input("input/day15-input.txt")
 
     row, col = find_robot_pos(warehouse_map)
     robot = Robot(row, col, warehouse_map)
+    print(commands)
+
     for command in commands:
-        print(command)
         robot.move(command)
-        print(robot)
-        print_map(robot.warehouse_map)
-        time.sleep(0.5)
-        clear_console()
+        #print(command)
+        #print(robot)
+        #print_map(robot.warehouse_map)
+        #time.sleep(0.2)
+        #clear_console()
 
     print_map(robot.warehouse_map)
     sum_gps = 0
