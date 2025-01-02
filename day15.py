@@ -1,113 +1,115 @@
-class Box:
-    def __init__(self, row, col):
-        self.row = row
-        self.col = col
-    def __str__(self) -> str:
-        return f"Box in ({self.row},{self.col})"
-    def __eq__(self, other) -> bool:
-        if isinstance(other, Box):
-            return [self.row, self.col] == [other.row, other.col]
-        return False
-    def move(self, direction):
-        if direction == "^" and Box(self.row-1, self.col) not in box_list and Wall(self.row-1, self.col) not in wall_list:
-            self.row -= 1
-        elif direction == "v" and Box(self.row+1, self.col) not in box_list and Wall(self.row+1, self.col) not in wall_list:
-            self.row += 1
-        elif direction == "<" and Box(self.row, self.col-1) not in box_list and Wall(self.row, self.col-1) not in wall_list:
-            self.col -= 1
-        elif direction == ">" and Box(self.row, self.col+1) not in box_list and Wall(self.row, self.col+1) not in wall_list:
-            self.col += 1
-        return self
-
-class Wall:
-    def __init__(self, row, col):
-        self.row = row
-        self.col = col
-    def __str__(self) -> str:
-        return "#"
-
-wall_list = [ Wall(0,4) ]
-box_list = [ Box(3,4), Box(2,4) ]
-
-# TODO: all directions!
-def get_boxes_to_move(robot_row, robot_col, closest_wall_row):
-    # get_boxes_to_move_list
-    boxes_to_move = list()
-    for box in box_list:
-        for r in range(robot_row, closest_wall_row, -1):
-            if box == Box(row=r, col=robot_col):
-               # print(box)
-                boxes_to_move.append(box)
-        #   print(f"mozgatandó boxok: {b}  
-    boxes_to_move.sort(key=lambda b: b.row, reverse=False)
-    return boxes_to_move
+import platform
+import os
+import time
 
 class Robot:
-    def __init__(self, row, col):
+    def __init__(self, row: int, col: int, warehouse_map: list):
         self.row = row
         self.col = col
+        self.warehouse_map = warehouse_map
     def __str__(self) -> str:
         return f"Robot in ({self.row},{self.col})"
-    def can_move(self, direction):
-        if direction == "^":
-            boxes_to_move = list()
-            walls_above_row = [ wall.row for wall in wall_list if wall.col == self.col and wall.row < self.row ]
-            if len(walls_above_row) == 0: # no wall at all 
-                return True
-            closest_wall_row = max(walls_above_row)
-            if self.row == closest_wall_row + 1: # next to wall
-                return False
-            boxes_to_move = get_boxes_to_move(self.row, self.col, closest_wall_row)
-            if len(boxes_to_move) == closest_wall_row - self.row:
-                return False
-            # move boxes before the robot
-            for i, bm in enumerate(boxes_to_move):
-                 boxes_to_move[i] = bm.move(direction)
-               #  print(f"{boxes_to_move[i]} doboz mozgult")
-            return True
     def move(self, direction):
-        if direction == "^" and self.can_move(direction):
+        r = self.row
+        c = self.col
+        if r < 0 or r >= len(self.warehouse_map[0]) or c < 0 or c >= len(self.warehouse_map):
+            return
+        if direction == "^" and self.warehouse_map[r-1][c] != "#":
+            if self.warehouse_map[r-1][c] == "O": # there is a box in front of the robot
+                idx = r-1
+                while self.warehouse_map[idx][c] == "O":
+                    idx-=1
+                if self.warehouse_map[idx][c] == "#": # can not step
+                    return
+                else: # step - throw all the boxes
+                    self.warehouse_map[idx][c] = "O"
+            self.warehouse_map[r][c] = "."
             self.row -= 1
-        elif direction == "v" and self.can_move(direction):
+            self.warehouse_map[r-1][c] = "@"
+        elif direction == "v" and self.warehouse_map[r+1][c] != "#":
+            if self.warehouse_map[r+1][c] == "O": # there is a box in front of the robot
+                idx = r+1
+                while self.warehouse_map[idx][c] == "O":
+                    idx+=1
+                if self.warehouse_map[idx][c] == "#": # can not step
+                    return
+                else: # step - throw all the boxes
+                    self.warehouse_map[idx][c] = "O"
+            self.warehouse_map[r][c] = "."
             self.row += 1
-        elif direction == "<" and self.can_move(direction):
-            self.row -= 1
-        elif direction == ">" and self.can_move(direction):
-            self.row += 1
+            self.warehouse_map[r+1][c] = "@"
+        elif direction == "<" and self.warehouse_map[r][c-1] != "#":
+            if self.warehouse_map[r][c-1] == "O": # there is a box in front of the robot
+                idx = c-1
+                while self.warehouse_map[r][idx] == "O":
+                    idx-=1
+                if self.warehouse_map[r][idx] == "#": # can not step
+                    return
+                else: # step - throw all the boxes
+                    self.warehouse_map[r][idx] = "O"
+            self.warehouse_map[r][c] = "."
+            self.col -= 1
+            self.warehouse_map[r][c-1] = "@"
+        elif direction == ">" and self.warehouse_map[r][c+1] != "#":
+            if self.warehouse_map[r][c+1] == "O": # there is a box in front of the robot
+                idx = c+1
+                while self.warehouse_map[r][idx] == "O":
+                    idx+=1
+                if self.warehouse_map[r][idx] == "#": # can not step
+                    return
+                else: # step - throw all the boxes
+                    self.warehouse_map[r][idx] = "O"
+            self.warehouse_map[r][c] = "."
+            self.col += 1
+            self.warehouse_map[r][c+1] = "@"
 
 def read_input(filename):
-    robot_map = list()
+    warehouse_map = list()
     with open(filename) as file:
-        line = file.readline().strip("\n")
+        line = list(file.readline().strip("\n"))
         while line:
-            robot_map.append(line)
-            line = file.readline().strip("\n")
+            warehouse_map.append(line)
+            line = list(file.readline().strip("\n"))
         commands = file.readline().strip("\n")
-    return robot_map, commands
+    return warehouse_map, commands
 
-def print_map(robot_map):
-    for line in robot_map:
-        print(line)
+def print_map(warehouse_map):
+    for line in warehouse_map:
+        print(" ".join(line))
 
-def find_robot_pos(robot_map):
-    for row_idx, row in enumerate(robot_map):
-        col_idx = str(row).find("@")
+def find_robot_pos(warehouse_map):
+    for row_idx, row in enumerate(warehouse_map):
+        col_idx = "".join(row).find("@")
         if col_idx != -1:
             return row_idx, col_idx
     return None
 
+def clear_console():
+    if platform.system() == "Windows":
+        os.system("cls")
+    else:
+        os.system("clear")
+
 def main():
-    robot_map, commands = read_input("input/day15-test-input.txt")
-    print_map(robot_map)
+    warehouse_map, commands = read_input("input/day15-test-input.txt")
 
-    row, col = find_robot_pos(robot_map)
-
-    robot = Robot(row, col)
+    row, col = find_robot_pos(warehouse_map)
+    robot = Robot(row, col, warehouse_map)
     for command in commands:
-        print(robot)
+        print(command)
         robot.move(command)
-        for box in box_list:
-            print(box)
+        print(robot)
+        print_map(robot.warehouse_map)
+        time.sleep(0.5)
+        clear_console()
+
+    print_map(robot.warehouse_map)
+    sum_gps = 0
+    for r in range(len(robot.warehouse_map)):
+        for c in range(len(robot.warehouse_map[r])):
+            if robot.warehouse_map[r][c] == "O":
+                sum_gps += (100 * r + c)
+    print(f"sum of all GPS coordinates: {sum_gps}")
 
 if __name__ == "__main__":
     main()
